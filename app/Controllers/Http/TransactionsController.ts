@@ -1,29 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
-import crypto from 'crypto'
-import { Address } from 'App/Helpers'
+import { Blockchain } from 'App/Helpers'
 import Block from 'App/Models/Block'
-
-function sha256(data: string) {
-  return crypto.createHash('sha256').update(data).digest('hex')
-}
-
-function verifySignature(publicKey: string, hash: string, signature: string) {
-  const verifier = crypto.createVerify('RSA-SHA256')
-  verifier.write(hash)
-  verifier.end()
-
-  return verifier.verify(publicKey, signature, 'hex')
-}
-
-function getPublicKeyHash(publicKey: string) {
-  const data = publicKey
-    .replace('-----BEGIN PUBLIC KEY-----', '')
-    .replace('-----END PUBLIC KEY-----', '')
-    .replace(/[\n\r]/g, '')
-
-  return sha256(data)
-}
 
 export default class TransactionsController {
   public async store({ request, response, logger }: HttpContextContract) {
@@ -33,8 +11,8 @@ export default class TransactionsController {
       }),
     })
 
-    const sender = getPublicKeyHash(publicKey)
-    const { balance } = await Address.find(sender)
+    const sender = Blockchain.getPublicKeyHash(publicKey)
+    const { balance } = await Blockchain.getAddress(sender)
 
     const {
       nonce,
@@ -57,22 +35,9 @@ export default class TransactionsController {
     })
 
     const amount = +preamount.toFixed(0)
+    const hash = Blockchain.sha256(`${nonce}${sender}${recipier}${amount}`)
 
-    const hash = sha256(`${nonce}${sender}${recipier}${amount}`)
-
-    logger.debug(
-      JSON.stringify({
-        publicKey,
-        nonce,
-        sender,
-        recipier,
-        amount,
-        hash,
-        signature,
-      })
-    )
-
-    if (!verifySignature(publicKey, hash, signature)) {
+    if (!Blockchain.verifySignature(publicKey, hash, signature)) {
       logger.warn('Signature verification failed.')
 
       return response.unprocessableEntity({
@@ -89,7 +54,6 @@ export default class TransactionsController {
     }
 
     const prevBlock = await Block.getLastBlock()
-
     logger.debug(`Last block of the chain index: ${prevBlock?.index} hash: ${prevBlock?.hash}.`)
 
     const block = await Block.create({
@@ -105,6 +69,7 @@ export default class TransactionsController {
     })
 
     logger.debug(`Added block of the chain index: ${block.index} hash: ${block.hash}.`)
+    logger.debug(`${block.toJSON()}`)
 
     return response.created(block)
   }
