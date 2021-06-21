@@ -58,15 +58,7 @@ export default class TransactionsController {
 
     const amount = +preamount.toFixed(0)
 
-    if (balance - amount < 0) {
-      logger.warn('Insufficient balance to transfer.')
-
-      return response.unprocessableEntity({
-        errors: [{ message: 'Insufficient balance to transfer.' }],
-      })
-    }
-
-    const hash = sha256(`${nonce}${publicKey}${sender}${recipier}${amount}`)
+    const hash = sha256(`${nonce}${sender}${recipier}${amount}`)
 
     logger.debug(
       JSON.stringify({
@@ -85,6 +77,14 @@ export default class TransactionsController {
 
       return response.unprocessableEntity({
         errors: [{ message: 'Signature verification failed.' }],
+      })
+    }
+
+    if (balance - amount < 0) {
+      logger.warn('Insufficient balance to transfer.')
+
+      return response.unprocessableEntity({
+        errors: [{ message: 'Insufficient balance to transfer.' }],
       })
     }
 
