@@ -14,7 +14,7 @@ export default class Blocks extends BaseSchema {
       table.integer('amount').notNullable()
       table.string('signature').notNullable()
       table.string('hash').notNullable()
-      table.string('prev_block_hash')
+      table.string('prev_block_hash').nullable()
     })
   }
 
