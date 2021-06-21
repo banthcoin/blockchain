@@ -3,9 +3,6 @@
 # set production environment
 export ENV_PATH="/home/ec2-user/.env.production"
 
-# configure pm2
-pm2 startup
-
 # application directory
 cd /home/ec2-user/node
 

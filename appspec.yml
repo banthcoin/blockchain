@@ -9,15 +9,12 @@ hooks:
   AfterInstall:
     - location: /deploy/hooks/after-install.sh
       runas: root
-
   ApplicationStart:
     - location: /deploy/hooks/application-start.sh
       runas: root
-
   ApplicationStop:
     - location: /deploy/hooks/application-stop.sh
       runas: root
-
   ValidateService:
     - location: /deploy/hooks/validate-service.sh
       runas: root

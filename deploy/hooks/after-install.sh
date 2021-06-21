@@ -12,3 +12,6 @@ npm install yarn -g
 
 # install pm2
 yarn global add pm2
+
+# configure pm2
+pm2 startup
