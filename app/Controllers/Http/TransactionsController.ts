@@ -1,6 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import crypto from 'crypto'
+import { Address } from 'App/Helpers'
 import Block from 'App/Models/Block'
 
 function sha256(data: string) {
@@ -15,66 +16,69 @@ function verifySignature(publicKey: string, hash: string, signature: string) {
   return verifier.verify(publicKey, signature, 'hex')
 }
 
+function getPublicKeyHash(publicKey: string) {
+  const data = publicKey
+    .replace('-----BEGIN PUBLIC KEY-----', '')
+    .replace('-----END PUBLIC KEY-----', '')
+    .replace(/[\n\r]/g, '')
+
+  return sha256(data)
+}
+
 export default class TransactionsController {
   public async store({ request, response, logger }: HttpContextContract) {
-    const { publicKey, sender, recipier, amount, signature } = await request.validate({
+    const { publicKey } = await request.validate({
       schema: schema.create({
-        publicKey: schema.string(),
-        sender: schema.string(),
-        recipier: schema.string(),
-        amount: schema.number(),
-        signature: schema.string(),
+        publicKey: schema.string({ trim: true }),
       }),
     })
 
-    logger.info(`sender: ${sender}`)
-    logger.info(`recipier: ${recipier}`)
-    logger.info(`amount: ${amount}`)
-    logger.info(`signature: ${signature}`)
+    const sender = getPublicKeyHash(publicKey)
+    const { balance } = await Address.find(sender)
 
-    if (sender !== sha256(publicKey)) {
-      logger.warn('The publicKey hash does not match the sender.')
-
-      return response.unprocessableEntity({
-        errors: [{ message: 'The publicKey sha256 hash does not match the sender.' }],
-      })
-    }
-
-    if (!/\b[A-Fa-f0-9]{64}\b/.test(recipier)) {
-      logger.warn('The receiver is not a valid sha256 hash.')
-
-      return response.unprocessableEntity({
-        errors: [{ message: 'The receiver is not a valid hash.' }],
-      })
-    }
-
-    if (amount <= 0) {
-      logger.warn('The value cannot be less than 0.')
-
-      return response.unprocessableEntity({
-        errors: [{ message: 'The value cannot be less than 0.' }],
-      })
-    }
-
-    const { nonce } = await request.validate({
+    const {
+      nonce,
+      recipier,
+      amount: preamount,
+      signature,
+    } = await request.validate({
       schema: schema.create({
         nonce: schema.number([
           rules.unique({
             table: 'blocks',
             column: 'nonce',
-            where: {
-              sender,
-            },
+            where: { sender },
           }),
         ]),
+        recipier: schema.string({ trim: true }, [rules.regex(/\b[A-Fa-f0-9]{64}\b/)]),
+        amount: schema.number([rules.range(1, 100000000000000000)]),
+        signature: schema.string({ trim: true }),
       }),
     })
 
-    logger.info(`nonce: ${nonce}`)
+    const amount = +preamount.toFixed(0)
 
-    const hash = Block.hashBlock({ nonce, publicKey, sender, recipier, amount })
+    if (balance - amount < 0) {
+      logger.warn('Insufficient balance to transfer.')
 
-    logger.info(`block hash: ${hash}`)
+      return response.unprocessableEntity({
+        errors: [{ message: 'Insufficient balance to transfer.' }],
+      })
+    }
+
+    const hash = sha256(`${nonce}${publicKey}${sender}${recipier}${amount}`)
+
+    logger.debug(
+      JSON.stringify({
+        publicKey,
+        nonce,
+        sender,
+        recipier,
+        amount,
+        hash,
+        signature,
+      })
+    )
 
     if (!verifySignature(publicKey, hash, signature)) {
       logger.warn('Signature verification failed.')
@@ -85,6 +89,9 @@ export default class TransactionsController {
     }
 
     const prevBlock = await Block.getLastBlock()
+
+    logger.debug(`Last block of the chain index: ${prevBlock?.index} hash: ${prevBlock?.hash}.`)
+
     const block = await Block.create({
       timestamp: new Date().getTime(),
       nonce,
@@ -94,10 +101,10 @@ export default class TransactionsController {
       amount,
       signature,
       hash,
-      prevBlockHash: prevBlock?.hash || null,
+      prevBlockHash: prevBlock?.hash,
     })
 
-    logger.info(`Chain block index ${block.index}.`)
+    logger.debug(`Added block of the chain index: ${block.index} hash: ${block.hash}.`)
 
     return response.created(block)
   }

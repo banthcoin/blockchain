@@ -1,5 +1,4 @@
 import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'
-import crypto from 'crypto'
 
 export default class Block extends BaseModel {
   @column({ isPrimary: true })
@@ -30,22 +29,9 @@ export default class Block extends BaseModel {
   public hash: string
 
   @column()
-  public prevBlockHash: string | null
+  public prevBlockHash?: string
 
   public static async getLastBlock() {
     return await Block.query().orderBy('index', 'desc').first()
-  }
-
-  public static hashBlock(block: {
-    nonce: number
-    publicKey: string
-    sender: string
-    recipier: string
-    amount: number
-  }) {
-    return crypto
-      .createHash('sha256')
-      .update(`${block.nonce}.${block.publicKey}.${block.sender}.${block.recipier}.${block.amount}`)
-      .digest('hex')
   }
 }
