@@ -11,7 +11,7 @@ export default class FirstBlockSeeder extends BaseSeeder {
         publicKey: 'first_block',
         sender: 'first_block',
         recipier: 'recipier',
-        amount: 100000000000000000,
+        value: 100000000000000000,
         hash: 'first_block',
         signature: 'first_block',
       }

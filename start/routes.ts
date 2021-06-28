@@ -21,6 +21,5 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.get('health', 'HealthCheckController.getHealthyReport')
-Route.get('blockchain', 'BlockchainController.index')
-Route.post('transactions', 'TransactionsController.store')
-Route.get('address/:address', 'AddressesController.show')
+Route.get('blockchain', 'BlockchainController.getChain')
+Route.post('blocks', 'BlockchainController.addBlock')

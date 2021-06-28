@@ -20,7 +20,10 @@ export default class Block extends BaseModel {
   public recipier: string
 
   @column()
-  public amount: number
+  public value: number
+
+  @column()
+  public message?: string
 
   @column()
   public signature: string
@@ -30,8 +33,4 @@ export default class Block extends BaseModel {
 
   @column()
   public prevBlockHash?: string
-
-  public static async getLastBlock() {
-    return await Block.query().orderBy('index', 'desc').first()
-  }
 }
