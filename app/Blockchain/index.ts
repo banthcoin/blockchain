@@ -72,7 +72,7 @@ class Blockchain {
 
     const hash = this.hash(`${nonce}${sender}${recipier}${value}${message}`)
 
-    const signatureTestResult = true
+    const signatureTestResult = true // Add real test
     if (!signatureTestResult) throw new Error('Signature test failed!')
 
     const prevBlock = await this.getLastBlock()
