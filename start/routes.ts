@@ -23,5 +23,4 @@ import Route from '@ioc:Adonis/Core/Route'
 Route.get('health', 'HealthCheckController.getHealthyReport')
 Route.get('blockchain', 'BlockchainController.chain')
 Route.post('blocks', 'BlocksController.store')
-
-// todo: adicionar o recurso de endereço
+Route.get('address/:address', 'AddressesController.show')

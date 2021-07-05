@@ -27,6 +27,32 @@ class Blockchain {
     return await Block.query().orderBy('index', 'desc').first()
   }
 
+  public async getAddressInfo(address: string) {
+    const blocks = await Block.query().where({ sender: address }).orWhere({ recipier: address }).exec()
+
+    const transactions = blocks.length
+
+    const totalReceived = blocks
+      .filter((block) => block.recipier === address)
+      .map((block) => block.value)
+      .reduce((previousValue, currentValue) => previousValue + currentValue, 0)
+
+    const totalSent = blocks
+      .filter((block) => block.sender === address)
+      .map((block) => block.value)
+      .reduce((previousValue, currentValue) => previousValue + currentValue, 0)
+
+    const finalBalance = totalReceived - totalSent
+
+    return {
+      transactions,
+      totalReceived,
+      totalSent,
+      finalBalance,
+      blocks,
+    }
+  }
+
   public async addBlock(block: NewBlock) {
     // todo: validar nonce
     // todo: validar recebedor
