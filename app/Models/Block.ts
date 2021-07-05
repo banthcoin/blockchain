@@ -8,10 +8,10 @@ export default class Block extends BaseModel {
   public timestamp: number
 
   @column()
-  public nonce: number
+  public publicKey: string
 
   @column()
-  public publicKey: string
+  public nonce: number
 
   @column()
   public sender: string
