@@ -16,11 +16,11 @@ export function getSignature(privateKey: string, data: string) {
 
 export function getSignatureVerifyResult(publicKey: string, hash: string, signature: string) {
   const verifier = crypto.createVerify('RSA-SHA256')
-  verifier.update(hash, 'hex')
+  verifier.update(hash)
 
   const buff = Buffer.from(publicKey, 'base64')
 
-  return verifier.verify({ key: buff, format: 'der', type: 'spki' }, signature)
+  return verifier.verify({ key: buff, format: 'der', type: 'spki' }, signature, 'hex')
 }
 
 export function generateKeyPair() {

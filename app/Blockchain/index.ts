@@ -57,6 +57,8 @@ class Blockchain {
   public async addBlock(block: NewBlock) {
     const sender = crypto.hash(block.publicKey)
     const hash = crypto.hash(`${block.nonce}${sender}${block.recipier}${block.value}${block.message}`)
+    console.log(`${block.nonce}${sender}${block.recipier}${block.value}${block.message}`)
+    console.log(`hash=${hash}`)
 
     // validar nonce
     await validator.validate({
@@ -89,7 +91,9 @@ class Blockchain {
     })
 
     // validar assinatura
+    console.log('publickey', block.publicKey, '\n\n\nsignature', block.signature)
     const signatureTestResult = getSignatureVerifyResult(block.publicKey, hash, block.signature)
+    console.log({ signatureTestResult })
     if (!signatureTestResult) throw new Error('Signature test failed!')
 
     // validar saldo
