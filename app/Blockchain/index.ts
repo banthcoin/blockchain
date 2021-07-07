@@ -82,12 +82,14 @@ class Blockchain {
       data: { recipier: block.recipier },
     })
 
+    const value = parseFloat(block.value.toFixed(8))
+
     // validar valor
     await validator.validate({
       schema: schema.create({
-        value: schema.number([rules.range(1, 100000000000000000)]),
+        value: schema.number([rules.range(0.00000001, 1000000000)]),
       }),
-      data: { value: block.value },
+      data: { value },
     })
 
     // validar assinatura
@@ -98,7 +100,8 @@ class Blockchain {
 
     // validar saldo
     const { finalBalance } = await this.getAddressInfo(sender)
-    const balanceTestResult = finalBalance - block.value >= 0
+    console.log({ finalBalance })
+    const balanceTestResult = finalBalance - value >= 0
     if (!balanceTestResult) throw new Error('Insufficient balance to transfer.')
 
     const prevBlock = await this.getLastBlock()
@@ -109,7 +112,7 @@ class Blockchain {
       nonce: block.nonce,
       sender,
       recipier: block.recipier,
-      value: block.value,
+      value,
       message: block.message,
       publicKey: block.publicKey,
       signature: block.signature,

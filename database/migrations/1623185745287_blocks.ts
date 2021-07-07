@@ -11,7 +11,7 @@ export default class Blocks extends BaseSchema {
       table.string('public_key').notNullable()
       table.string('sender').notNullable()
       table.string('recipier').notNullable()
-      table.integer('value').notNullable()
+      table.bigInteger('value').notNullable()
       table.string('message').nullable()
       table.string('signature').notNullable()
       table.string('hash').notNullable()
