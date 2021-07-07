@@ -1,5 +1,6 @@
+import { validator, schema, rules } from '@ioc:Adonis/Core/Validator'
 import Block from 'App/Models/Block'
-import crypto from 'App/Utils/crypto'
+import crypto, { getSignatureVerifyResult } from 'App/Utils/crypto'
 
 interface NewBlock {
   publicKey: string
@@ -54,14 +55,47 @@ class Blockchain {
   }
 
   public async addBlock(block: NewBlock) {
-    // todo: validar nonce
-    // todo: validar recebedor
-    // todo: validar valor
-    // todo: validar assinatura
-    // todo: validar saldo
-
     const sender = crypto.hash(block.publicKey)
     const hash = crypto.hash(`${block.nonce}${sender}${block.recipier}${block.value}${block.message}`)
+
+    // validar nonce
+    await validator.validate({
+      schema: schema.create({
+        nonce: schema.number([
+          rules.unique({
+            table: 'blocks',
+            column: 'nonce',
+            where: { sender },
+          }),
+        ]),
+      }),
+      data: { nonce: block.nonce },
+    })
+
+    // validar recebedor
+    await validator.validate({
+      schema: schema.create({
+        recipier: schema.string({ trim: true }, [rules.regex(/\b[A-Fa-f0-9]{64}\b/)]),
+      }),
+      data: { recipier: block.recipier },
+    })
+
+    // validar valor
+    await validator.validate({
+      schema: schema.create({
+        value: schema.number([rules.range(1, 100000000000000000)]),
+      }),
+      data: { value: block.value },
+    })
+
+    // validar assinatura
+    const signatureTestResult = getSignatureVerifyResult(block.publicKey, hash, block.signature)
+    if (!signatureTestResult) throw new Error('Signature test failed!')
+
+    // validar saldo
+    const { finalBalance } = await this.getAddressInfo(sender)
+    const balanceTestResult = finalBalance - block.value >= 0
+    if (!balanceTestResult) throw new Error('Insufficient balance to transfer.')
 
     const prevBlock = await this.getLastBlock()
     const prevBlockHash = prevBlock?.hash
