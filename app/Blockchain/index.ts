@@ -249,7 +249,12 @@ class Blockchain {
       throw new Error('Double confirmation')
     }
 
-    const block = await Block.findByOrFail('hash', hash)
+    const block = await Block.query()
+      .where('hash', hash)
+      .if(this.token, (query) => {
+        query.where('token', this.token!)
+      })
+      .firstOrFail()
 
     if (block.token !== this.token) {
       throw new Error('Bad confirmation token')
