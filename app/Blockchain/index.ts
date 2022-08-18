@@ -359,6 +359,13 @@ class Blockchain {
       supply += firstBlock.value
     }
 
+    const burnAddress = '0000000000000000000000000000000000000000000000000000000000000000'
+    const burnedBlocks = await Block.query().where('token', this.token).where('recipier', burnAddress).exec()
+
+    for (const block of burnedBlocks) {
+      supply -= block.value
+    }
+
     const miners = await Miner.query().where('token', this.token).exec()
 
     for (const miner of miners) {
